@@ -18,7 +18,10 @@ from tqdm import tqdm
 # %% 参数
 
 # 网格大小
-Δ = [0.05, 0.3, 0.8, 1]
+Δ = [0.05, 0.3, 0.7, 1]
+
+# 松弛因子
+ω = [0.2, 0.5, 0.7, 1]
 
 # x方向网格数
 # +1的原因:创造边界条件
@@ -30,17 +33,6 @@ def create_Nx(h):
 def create_Ny(h):
     Ny = int(12 / h) + 1 
     return Ny 
-
-# 初始化温度场（Nx * Ny的矩阵）
-# T = np.zeros((Nx, Ny))  
-
-# 左、右、上、下侧边界
-# T[:, -1], T[:, 0], T[0, :], T[-1, :]  = 20, 20, 100, 20
-
-
-# %% 迭代构造
-
-# 思路：利用Jacobi Over-Relaxaion
 
 # 不同的松弛因子
 ω = [0.2, 0.5, 0.7, 1]
@@ -58,9 +50,20 @@ flags = np.zeros((len(Δ), len(ω)))
 times = np.zeros((len(Δ), len(ω)))
 
 # 颜色条刻度
-GLOBAL_VMIN = 0
+GLOBAL_VMIN = 20
 GLOBAL_VMAX = 100
 TICK_INTERVAL = 10
+
+# 初始化温度场（Nx * Ny的矩阵）
+# T = np.zeros((Nx, Ny))  
+
+# 左、右、上、下侧边界
+# T[:, -1], T[:, 0], T[0, :], T[-1, :]  = 20, 20, 100, 20
+
+
+# %% 迭代构造
+
+# 思路：利用Jacobi Over-Relaxaion
 
 # 加权Jacobi迭代与进度条创建
 with tqdm(total=len(Δ)*len(ω), desc="Progress") as pbar:
@@ -90,7 +93,7 @@ with tqdm(total=len(Δ)*len(ω), desc="Progress") as pbar:
             Nx = create_Nx(h)
             Ny = create_Ny(h)
             T = np.zeros((Nx, Ny)) 
-            T[:, -1], T[:, 0], T[0, :], T[-1, :]  = 20, 20, 100, 20 #左、右、上、下边界条件
+            T[:, -1], T[:, 0], T[0, :], T[-1, :]  = 20, 20, 20, 100 #左、右、上、下边界条件
             t0 = time.time() # 开始计时
             for step in range(iter_steps):
                 max_error = 0
@@ -121,36 +124,51 @@ with tqdm(total=len(Δ)*len(ω), desc="Progress") as pbar:
             # 进度条更新
             pbar.update(1)
             
+            # 创建网格坐标
+            X, Y = np.meshgrid(np.linspace(0, 0.12, Nx), np.linspace(0, 0.15, Ny))
+            
             # 绘制云图
-            im = ax.contourf(T, 
-                      levels = 80,
-                      origin = 'upper',
-                      extent=[0, 15, 0, 12],
+            cf = ax.contourf(Y, X, T.T, 
+                      levels = 50,
                       cmap = 'plasma')
             
             # 云图绘图设置
-            ax.set(xlabel = 'X (cm)', 
-                   ylabel = 'Y (cm)', 
+            ax.set(xlabel = 'X (m)', 
+                   ylabel = 'Y (m)', 
                    title = f'ω={omega}, Steps={flags[h_idx, omega_idx]:.0f}')
             
             # 设置坐标轴字号大小
             ax.tick_params(axis = 'both', which = 'major', labelsize = 8) 
             
-            # 取消网格
+            # 取消网格显示
             ax.grid(False)
     
             # 刻度颜色条设置
             cbar_ticks = np.arange(GLOBAL_VMIN, GLOBAL_VMAX+TICK_INTERVAL, TICK_INTERVAL)
             
             # 创建颜色条
-            cbar = plt.colorbar(im, ax = ax, pad = 0.02, ticks=cbar_ticks)
+            cbar = plt.colorbar(cf, ax = ax, pad = 0.02, ticks=cbar_ticks)
             
             # 颜色条标注字号大小
             cbar.ax.tick_params(labelsize = 8)
             
             # 颜色条标注
-            cbar.set_label('Temperature (°C)', fontsize=10)
-        
+            cbar.set_label('Temperature (°C)', fontsize = 10)
+            
+            # 绘制等温线
+            cs = ax.contour(Y, X, T.T, 
+                          levels = np.arange(20, 101, 10),
+                          colors = 'w',
+                          linewidths = 0.8,
+                          linestyles = '--')
+            
+            # 等温线标签
+            ax.clabel(cs, cs.levels, 
+                    inline = True, 
+                    fmt = '%d℃', 
+                    fontsize = 8,
+                    colors = 'k')
+            
         # 子图位置调整
         plt.subplots_adjust(
             top = 0.85, 
@@ -159,4 +177,4 @@ with tqdm(total=len(Δ)*len(ω), desc="Progress") as pbar:
             
 # %%
 
-plt.show()
+    plt.show()
