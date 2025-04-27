@@ -21,14 +21,14 @@ import itertools
 
 # x方向网格数
 # +1的原因:创造边界条件
-def Nx(h):
-    Nx = 15 / h
-    return Nx + 1
+def create_Nx(h):
+    Nx = int(15 / h) + 1 
+    return Nx 
 
 #y方向网格数
-def Ny(h):
-    Ny = 12 / h
-    return Ny + 1
+def create_Ny(h):
+    Ny = int(12 / h) + 1 
+    return Ny 
 
 # 初始化温度场（Nx * Ny的矩阵）
 # T = np.zeros((Nx, Ny))  
@@ -39,31 +39,45 @@ def Ny(h):
 
 # %% 迭代构造
 
-# 思路：利用加速Gauss-Seidal迭代法：x(k+1) = x(k) + omega * Δx
+# 思路：利用Jacobi Over-Relaxaion
 
 # 不同的松弛因子
-omega = [0.5, 0.8, 1, 2]
+ω = [0.3, 0.5, 0.8, 1, 1.5]
 
 # 迭代步数
-iter_steps = 1e5
+iter_steps = 1e6
 
 # 精度
 tol = 1e-5
 
-# 迭代
-flag = 0
-while flag < iter_steps:
-    max_error = 0
-    for h in Δ:
-        Nx = Nx(h)
-        Ny = Ny(h)
+# 记录迭代次数
+flags = np.zeros((len(Δ), len(ω))) 
+
+# 记录迭代时间
+times = np.zeros((len(Δ), len(ω)))
+
+# 加权Jacobi迭代
+for h in Δ:
+    for omega in ω:
+        Nx = create_Nx(h)
+        Ny = create_Ny(h)
         T = np.zeros((Nx, Ny)) 
         T[0, :], T[-1,], T[:, -1], T[:, 0]  = 20, 20, 100, 20
-        for i in range(Nx - 1):
-            for j in range(Ny - 1):
-        
-
-
+        t0 = time.time()
+        h_index = Δ.index(h)
+        omega_index = ω.index(omega)
+        flag = flags[h_index, omega_index] 
+        while flag < iter_steps:
+            max_error = 0
+            T_new = np.copy(T)  # 复制当前温度场
+            for i in range(1, Nx-1):
+                for j in range(1, Ny-1):
+                    T_new[i, j] = (1 - omega) * T[i, j] + omega * (T[i+1,j] + T[i-1,j] + T[i,j+1] + T[i,j-1]) / 4 
+                    max_error = max(max_error, abs(T_new[i,j] - T[i,j]))
+                    flag += 1
+                
+        t1 = time.time()
+        time[h_index, omega_index] = t1 - t0 # 单位：s
 
 
 
