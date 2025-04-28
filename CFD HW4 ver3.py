@@ -15,14 +15,11 @@ from tqdm import tqdm
 
 # %% 主要参数
 
-# 粗网格大小
-Δ = [0.3, 0.5, 0.7, 0.9]
-
-# 细网格大小
-# Δ = [0.05, 0.1, 0.15, 0.2]
+# 网格大小
+Δ = [0.3, 0.5, 0.7, 1.1]
 
 # 松弛因子
-ω = [0.75, 0.85, 0.9, 1.1]
+ω = [0.8, 1.3, 1.7, 1.8]
 
 
 # %% 次要参数
@@ -59,10 +56,6 @@ TICK_INTERVAL = 10
 
 # 左、右、上、下侧边界
 # T[:, -1], T[:, 0], T[0, :], T[-1, :]  = 20, 20, 100, 20
-
-# 计算理论最优松弛因子
-def calculate_omega_opt(h):
-    return 2 / (1 + np.sin(np.pi * h))
 
 # %% 迭代构造与温度场云图绘图
 
@@ -114,6 +107,9 @@ with tqdm(total=len(Δ)*len(ω), desc="Progress") as pbar:
             
             # 计时
             times[h_idx, omega_idx] = t1 - t0 # 单位：s
+            
+            # 迭代步统计
+            flags[h_idx, omega_idx] = step
             
             # 进度条更新
             pbar.update(1)
